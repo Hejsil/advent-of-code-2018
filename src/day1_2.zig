@@ -13,6 +13,7 @@ pub fn main() !void {
     defer direct_allocator.deinit();
 
     var res: i64 = 0;
+    var map = std.AutoHashMap(i64, void).init(allocator);
     var running = true;
     var line_buf = try std.Buffer.initSize(allocator, 0);
     defer line_buf.deinit();
@@ -26,7 +27,10 @@ pub fn main() !void {
             continue;
 
         res += try fmt.parseInt(i64, line, 10);
-        try stdout.print("{}\n", res);
+
+        const m_entry = try map.put(res, {});
+        if (m_entry) |entry|
+            try stdout.print("{}\n", entry.key);
 
         line_buf.shrink(0);
     }
