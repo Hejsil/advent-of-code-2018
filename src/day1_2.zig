@@ -1,9 +1,9 @@
 const std = @import("std");
 
-const io = std.io;
-const heap = std.heap;
-const mem = std.mem;
 const fmt = std.fmt;
+const heap = std.heap;
+const io = std.io;
+const mem = std.mem;
 
 pub fn main() !void {
     const stdin = &(try io.getStdIn()).inStream().stream;
@@ -34,5 +34,4 @@ pub fn main() !void {
 
         line_buf.shrink(0);
     }
-
 }
