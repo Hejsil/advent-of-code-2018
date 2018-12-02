@@ -16,10 +16,10 @@ pub fn main() !void {
     var line_buf = try std.Buffer.initSize(allocator, 0);
     defer line_buf.deinit();
 
-    var counts = []u8{0} ** math.maxInt(u8);
+    var counts = []u8{0} ** math.maxInt(u8) + 1;
     while (running) {
-        var add = []u8{0} ** math.maxInt(u8);
-        var letters = []u8{0} ** math.maxInt(u8);
+        var add = []u8{0} ** math.maxInt(u8) + 1;
+        var letters = []u8{0} ** math.maxInt(u8) + 1;
 
         stdin.readUntilDelimiterBuffer(&line_buf, '\n', 10000) catch |err| switch (err) {
             error.EndOfStream => running = false,
