@@ -31,7 +31,5 @@ pub fn main() !void {
         const m_entry = try map.put(res, {});
         if (m_entry) |entry|
             try stdout.print("{}\n", entry.key);
-
-        line_buf.shrink(0);
     }
 }

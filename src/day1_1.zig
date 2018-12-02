@@ -27,7 +27,5 @@ pub fn main() !void {
 
         res += try fmt.parseInt(i64, line, 10);
         try stdout.print("{}\n", res);
-
-        line_buf.shrink(0);
     }
 }
