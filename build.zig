@@ -14,6 +14,7 @@ pub fn build(b: *std.build.Builder) !void {
         const file = b.fmt("{}{c}{}", src, u8(path.sep), entry.name);
         const exe = b.addExecutable(name, file);
         exe.setBuildMode(mode);
+        exe.addPackagePath("fun", "lib/fun-with-zig/index.zig");
 
         const build_step = b.step(name, b.fmt("Build {}", name));
         build_step.dependOn(&exe.step);
