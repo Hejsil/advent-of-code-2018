@@ -16,27 +16,45 @@ pub fn main() !void {
     var ps = io.PeekStream(1, os.File.InStream.Error).init(stdin);
 
     var direct_allocator = heap.DirectAllocator.init();
-    var arena = heap.ArenaAllocator.init(&direct_allocator.allocator);
+    const allocator = &direct_allocator.allocator;
     defer direct_allocator.deinit();
-    defer arena.deinit();
 
-    const allocator = &arena.allocator;
+    const claims = try readClaims(allocator, &ps);
+    defer allocator.free(claims);
+
+    const overlaps = try fabricOverlaps(allocator, claims);
+    defer allocator.free(overlaps);
+
+    try stdout.print("{}\n", count(usize, overlaps, above1));
+}
+
+fn readClaims(allocator: *mem.Allocator, ps: var) ![]Claim {
     var claims = std.ArrayList(Claim).init(allocator);
+    defer claims.deinit();
 
-    var fabric_width: usize = 0;
-    var fabric_height: usize = 0;
-    while (scan(&ps, "#{} @ {},{}: {}x{}\n", Claim)) |claim| {
+    while (scan(ps, "#{} @ {},{}: {}x{}\n", Claim)) |claim| {
         try claims.append(claim);
-        fabric_width = math.max(fabric_width, claim.width + claim.x);
-        fabric_height = math.max(fabric_height, claim.height + claim.y);
     } else |err| switch (err) {
         error.EndOfStream => {},
         else => return err,
     }
 
+    return claims.toOwnedSlice();
+}
+
+fn fabricOverlaps(allocator: *mem.Allocator, claims: []const Claim) ![]usize {
+    var fabric_width: usize = 0;
+    var fabric_height: usize = 0;
+    for (claims) |claim| {
+        fabric_width = math.max(fabric_width, claim.width + claim.x);
+        fabric_height = math.max(fabric_height, claim.height + claim.y);
+    }
+
     const fabric = try allocator.alloc(usize, fabric_width * fabric_height);
+    errdefer allocator.free(fabric);
     mem.set(usize, fabric, 0);
-    for (claims.toSlice()) |claim| {
+
+    for (claims) |claim| {
         var x: usize = claim.x;
         while (x < claim.width + claim.x) : (x += 1) {
             var y: usize = claim.y;
@@ -46,12 +64,19 @@ pub fn main() !void {
         }
     }
 
+    return fabric;
+}
+
+fn count(comptime T: type, slice: []const T, predicate: fn (T) bool) usize {
     var res: usize = 0;
-    for (fabric) |inche| {
-        if (inche >= 2)
-            res += 1;
-    }
-    try stdout.print("{}\n", res);
+    for (slice) |item|
+        res += @boolToInt(predicate(item));
+
+    return res;
+}
+
+fn above1(i: usize) bool {
+    return i > 1;
 }
 
 const Claim = struct {

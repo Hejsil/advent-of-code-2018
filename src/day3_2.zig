@@ -16,30 +16,43 @@ pub fn main() !void {
     var ps = io.PeekStream(1, os.File.InStream.Error).init(stdin);
 
     var direct_allocator = heap.DirectAllocator.init();
-    var arena = heap.ArenaAllocator.init(&direct_allocator.allocator);
+    const allocator = &direct_allocator.allocator;
     defer direct_allocator.deinit();
-    defer arena.deinit();
 
-    const allocator = &arena.allocator;
+    const claims = try readClaims(allocator, &ps);
+    defer allocator.free(claims);
+
+    const claim = firstNoneIntersectingClaim(claims) orelse return error.NoPerfectClaim;
+    try stdout.print("{}\n", claim.id);
+}
+
+fn readClaims(allocator: *mem.Allocator, ps: var) ![]Claim {
     var claims = std.ArrayList(Claim).init(allocator);
+    defer claims.deinit();
 
-    while (scan(&ps, "#{} @ {},{}: {}x{}\n", Claim)) |claim| {
+    while (scan(ps, "#{} @ {},{}: {}x{}\n", Claim)) |claim| {
         try claims.append(claim);
     } else |err| switch (err) {
         error.EndOfStream => {},
         else => return err,
     }
 
-    outer: for (claims.toSlice()) |a, i| {
-        for (claims.toSlice()) |b, j| {
+    return claims.toOwnedSlice();
+}
+
+fn firstNoneIntersectingClaim(claims: []const Claim) ?Claim {
+    outer: for (claims) |a, i| {
+        for (claims) |b, j| {
             if (i == j)
                 continue;
             if (a.intersects(b))
                 continue :outer;
         }
 
-        try stdout.print("{}\n", a.id);
+        return a;
     }
+
+    return null;
 }
 
 const Claim = struct {
