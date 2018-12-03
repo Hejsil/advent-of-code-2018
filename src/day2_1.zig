@@ -1,33 +1,34 @@
+const fun = @import("fun");
 const std = @import("std");
 
 const heap = std.heap;
 const io = std.io;
 const math = std.math;
 const mem = std.mem;
+const os = std.os;
+
+const scan = fun.scan.scan;
 
 pub fn main() !void {
     const stdin = &(try io.getStdIn()).inStream().stream;
     const stdout = &(try io.getStdOut()).outStream().stream;
+
     var direct_allocator = heap.DirectAllocator.init();
     const allocator = &direct_allocator.allocator;
     defer direct_allocator.deinit();
 
-    var running = true;
+    try stdout.print("{}\n", try checksum(allocator, stdin));
+}
+
+fn checksum(allocator: *mem.Allocator, in_stream: var) !u64 {
+    var counts = []u64{0} ** (math.maxInt(u8) + 1);
     var line_buf = try std.Buffer.initSize(allocator, 0);
     defer line_buf.deinit();
 
-    var counts = []u8{0} ** (math.maxInt(u8) + 1);
-    while (running) {
-        var add = []u8{0} ** (math.maxInt(u8) + 1);
-        var letters = []u8{0} ** (math.maxInt(u8) + 1);
-
-        stdin.readUntilDelimiterBuffer(&line_buf, '\n', 10000) catch |err| switch (err) {
-            error.EndOfStream => running = false,
-            else => return err,
-        };
+    while (in_stream.readUntilDelimiterBuffer(&line_buf, '\n', 10000)) {
         const line = mem.trimRight(u8, line_buf.toSlice(), "\r\n");
-        if (line.len == 0)
-            continue;
+        var add = []u1{0} ** (math.maxInt(u8) + 1);
+        var letters = []u64{0} ** (math.maxInt(u8) + 1);
 
         for (line) |c|
             letters[c] += 1;
@@ -35,7 +36,10 @@ pub fn main() !void {
             add[num] = 1;
         for (add) |num, i|
             counts[i] += num;
+    } else |err| switch (err) {
+        error.EndOfStream => {},
+        else => return err,
     }
 
-    try stdout.print("{}\n", u64(counts[2]) * counts[3]);
+    return counts[2] * counts[3];
 }
