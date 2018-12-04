@@ -16,7 +16,7 @@ pub fn main() !void {
 
 fn sumLines(ps: var) !i64 {
     var sum: i64 = 0;
-    while (scan(ps, "{}\n", struct {
+    while (scan(undefined, ps, "{}\n", struct {
         i: i64,
     })) |line| {
         sum += line.i;

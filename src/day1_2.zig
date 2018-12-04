@@ -26,7 +26,7 @@ fn firstDupSum(allocator: *mem.Allocator, ps: var) !i64 {
 
     var sum: i64 = 0;
     while (true) {
-        const line = try scan(ps, "{}\n", struct {
+        const line = try scan(undefined, ps, "{}\n", struct {
             i: i64,
         });
         sum += line.i;
