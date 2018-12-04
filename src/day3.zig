@@ -26,6 +26,8 @@ pub fn main() !void {
     defer allocator.free(overlaps);
 
     try stdout.print("{}\n", count(usize, overlaps, above1));
+    const claim = firstNoneIntersectingClaim(claims) orelse return error.NoPerfectClaim;
+    try stdout.print("{}\n", claim.id);
 }
 
 fn readClaims(allocator: *mem.Allocator, ps: var) ![]Claim {
@@ -79,10 +81,43 @@ fn above1(i: usize) bool {
     return i > 1;
 }
 
+fn firstNoneIntersectingClaim(claims: []const Claim) ?Claim {
+    outer: for (claims) |a, i| {
+        for (claims) |b, j| {
+            if (i == j)
+                continue;
+            if (a.intersects(b))
+                continue :outer;
+        }
+
+        return a;
+    }
+
+    return null;
+}
+
 const Claim = struct {
     id: usize,
     x: usize,
     y: usize,
     width: usize,
     height: usize,
+
+    fn intersects(a: Claim, b: Claim) bool {
+        const Point = struct {
+            x: usize,
+            y: usize,
+        };
+
+        const top_left = Point{
+            .x = math.max(a.x, b.x),
+            .y = math.max(a.y, b.y),
+        };
+        const bot_right = Point{
+            .x = math.min(a.x + a.width, b.x + b.width),
+            .y = math.min(a.y + a.height, b.y + b.height),
+        };
+
+        return top_left.x < bot_right.x and top_left.y < bot_right.y;
+    }
 };
