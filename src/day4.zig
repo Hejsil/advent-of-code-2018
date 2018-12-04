@@ -28,6 +28,7 @@ pub fn main() !void {
     defer schedule.deinit();
 
     try stdout.print("{}\n", strategy1(schedule));
+    try stdout.print("{}\n", strategy2(schedule));
 }
 
 fn readRecords(allocator: *mem.Allocator, ps: var) ![]Record {
@@ -163,6 +164,40 @@ fn strategy1(schedule: SleepSchedule) usize {
                 .guard = guard.key,
                 .minutes = asleep_for,
                 .minut_most_asleep = maxIndex(usize, minutes).?,
+            };
+        }
+    }
+
+    return best.guard * best.minut_most_asleep;
+}
+
+fn strategy2(schedule: SleepSchedule) usize {
+    const Best = struct {
+        guard: u16,
+        minutes: u64,
+        minut_most_asleep: usize,
+    };
+
+    var best = Best{
+        .guard = 0,
+        .minutes = 0,
+        .minut_most_asleep = 0,
+    };
+    var iter = schedule.iterator();
+    while (iter.next()) |guard| {
+        var minutes = []usize{0} ** 60;
+        for (guard.value.toSlice()) |sleep| {
+            var min = sleep.start.min;
+            while (min < sleep.end.min) : (min += 1)
+                minutes[min] += 1;
+        }
+
+        const minut_most_asleep = maxIndex(usize, minutes).?;
+        if (best.minutes < minutes[minut_most_asleep]) {
+            best = Best{
+                .guard = guard.key,
+                .minutes = minutes[minut_most_asleep],
+                .minut_most_asleep = minut_most_asleep,
             };
         }
     }
