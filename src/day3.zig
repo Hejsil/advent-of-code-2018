@@ -34,7 +34,7 @@ fn readClaims(allocator: *mem.Allocator, ps: var) ![]Claim {
     var claims = std.ArrayList(Claim).init(allocator);
     defer claims.deinit();
 
-    while (scan(undefined, ps, "#{} @ {},{}: {}x{}\n", Claim)) |claim| {
+    while (scan(ps, "#{} @ {},{}: {}x{}\n", Claim)) |claim| {
         try claims.append(claim);
     } else |err| switch (err) {
         error.EndOfStream => {},

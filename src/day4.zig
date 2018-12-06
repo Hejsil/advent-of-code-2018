@@ -46,21 +46,21 @@ fn readRecords(allocator: *mem.Allocator, ps: var) ![]Record {
 }
 
 fn readRecord(ps: var) !Record {
-    const time = try scan(undefined, ps, "[{}-{}-{} {}:{}] ", Time);
+    const time = try scan(ps, "[{}-{}-{} {}:{}] ", Time);
     const next = try ps.stream.readByte();
     const kind = switch (next) {
         'G' => blk: {
-            const res = try scan(undefined, ps, "uard #{} begins shift\n", struct {
+            const res = try scan(ps, "uard #{} begins shift\n", struct {
                 id: u16,
             });
             break :blk Record.Kind{ .ShiftBegins = res.id };
         },
         'f' => blk: {
-            _ = try scan(undefined, ps, "alls asleep\n", struct {});
+            _ = try scan(ps, "alls asleep\n", struct {});
             break :blk Record.Kind{ .FallsAsleep = {} };
         },
         'w' => blk: {
-            _ = try scan(undefined, ps, "akes up\n", struct {});
+            _ = try scan(ps, "akes up\n", struct {});
             break :blk Record.Kind{ .WakesUp = {} };
         },
         else => return error.InvalidCharacter,
