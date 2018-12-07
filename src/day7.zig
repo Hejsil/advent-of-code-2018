@@ -23,6 +23,7 @@ pub fn main() !void {
 
     const build_order = try buildOrder(allocator, dependencies);
     try stdout.print("{}\n", build_order);
+    try stdout.print("{}\n", try buildSpeed(allocator, 5, 61 - 'A', dependencies));
 }
 
 fn readDependencies(allocator: *mem.Allocator, ps: var) ![]Dependency {
@@ -97,4 +98,115 @@ fn buildOrder(allocator: *mem.Allocator, dependencies: []const Dependency) ![]u8
     }
 
     return res.toOwnedSlice();
+}
+
+test "buildSpeed" {
+    var direct_allocator = heap.DirectAllocator.init();
+    const allocator = &direct_allocator.allocator;
+    defer direct_allocator.deinit();
+
+    const speed = try buildSpeed(allocator, 2, 1 - 'A', []Dependency{
+        Dependency{ .step = 'A', .depends_on = 'C' },
+        Dependency{ .step = 'F', .depends_on = 'C' },
+        Dependency{ .step = 'B', .depends_on = 'A' },
+        Dependency{ .step = 'D', .depends_on = 'A' },
+        Dependency{ .step = 'E', .depends_on = 'B' },
+        Dependency{ .step = 'E', .depends_on = 'D' },
+        Dependency{ .step = 'E', .depends_on = 'F' },
+    });
+    debug.assert(speed == 15);
+}
+
+fn buildSpeed(allocator: *mem.Allocator, workers: usize, duration: isize, dependencies: []const Dependency) !isize {
+    var arena_state = heap.ArenaAllocator.init(allocator);
+    const arena = &arena_state.allocator;
+    defer arena_state.deinit();
+
+    const Work = struct {
+        work: u8,
+        done: isize,
+
+        fn lessThan(a: @This(), b: @This()) bool {
+            return a.done < b.done;
+        }
+    };
+
+    var work_stack = std.ArrayList(Work).init(arena);
+    try work_stack.ensureCapacity(workers + 1);
+
+    var next_work = std.ArrayList(u8).init(arena);
+    try next_work.ensureCapacity(workers + 1);
+
+    const Deps = std.AutoHashMap(u8, void);
+    var dep_map = std.AutoHashMap(u8, Deps).init(allocator);
+    for (dependencies) |dep| {
+        const kv = try dep_map.getOrPutValue(dep.step, Deps.init(allocator));
+        _ = try dep_map.getOrPutValue(dep.depends_on, Deps.init(allocator));
+        _ = try kv.value.put(dep.depends_on, {});
+    }
+
+    var res: isize = 0;
+    while (dep_map.count() != 0 or work_stack.len != 0) {
+        var iter = dep_map.iterator();
+        while (iter.next()) |kv| {
+            if (kv.value.count() != 0)
+                continue;
+
+            next_work.append(kv.key) catch unreachable;
+            if (next_work.len > (workers - work_stack.len)) {
+                std.sort.sort(u8, next_work.toSlice(), lessThan(u8));
+                _ = next_work.pop();
+            }
+        }
+
+        for (next_work.toSlice()) |work| {
+            _ = dep_map.remove(work) orelse unreachable;
+            work_stack.append(Work{
+                .work = work,
+                .done = res + duration + @intCast(isize, work),
+            }) catch unreachable;
+        }
+        next_work.resize(0) catch unreachable;
+
+        const time = min(Work, work_stack.toSlice(), Work.lessThan) orelse return error.CouldNotBuild;
+        res += (time.done - res);
+
+        var i: usize = 0;
+        while (i < work_stack.len) {
+            const work = &work_stack.toSlice()[i];
+            if (work.done == res) {
+                iter = dep_map.iterator();
+                while (iter.next()) |kv| {
+                    _ = kv.value.remove(work.work);
+                }
+
+                work.* = work_stack.pop();
+            } else {
+                i += 1;
+            }
+        }
+    }
+
+    return res;
+}
+
+fn min(comptime T: type, slice: []const T, lt: fn (T, T) bool) ?T {
+    if (slice.len == 0)
+        return null;
+
+    var res = slice[0];
+    for (slice[0..]) |item| {
+        if (lt(item, res))
+            res = item;
+    }
+
+    return res;
+}
+
+fn lessThan(comptime T: type) fn (T, T) bool {
+    return struct {
+        fn lessThan(a: T, b: T) bool {
+            return a < b;
+        }
+    }.lessThan;
 }
