@@ -1,0 +1,13 @@
+image: archlinux
+packages:
+  - wget
+  - tar
+sources:
+  - https://github.com/Hejsil/advent-of-code-2018.git
+tasks:
+- get-zig-masker: |
+    wget https://ziglang.org/builds/zig-linux-x86_64-master.tar.xz
+    tar -xf zig-linux-*
+    zig-linux-*/zig version
+- build: |
+    zig-linux-*/zig build --build-file advent-of-code-2018/build.zig
