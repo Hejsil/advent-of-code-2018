@@ -3,7 +3,7 @@
 ## Build
 
 * `zig build` will build all days
-* `zig build dayX` will day X
+* `zig build dayX` will build day X
 
 ## Run
 
