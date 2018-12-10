@@ -34,7 +34,8 @@ fn simulateElfGame(child_allocator: *mem.Allocator, players: usize, last_marble:
     mem.set(usize, scores, 0);
 
     const Circle = std.LinkedList(usize);
-    const buf = try child_allocator.alloc(u8, last_marble * @sizeOf(Circle));
+    const marbles_allocated = (last_marble - (last_marble / 23)) + 1;
+    const buf = try child_allocator.alloc(u8, marbles_allocated * @sizeOf(Circle));
     defer child_allocator.free(buf);
 
     var fba = heap.FixedBufferAllocator.init(buf[0..]);
@@ -50,7 +51,7 @@ fn simulateElfGame(child_allocator: *mem.Allocator, players: usize, last_marble:
     circle.last = curr;
     circle.len = 1;
 
-    while (marble < last_marble) : ({
+    while (marble <= last_marble) : ({
         player = (player + 1) % players;
         marble += 1;
     }) {
