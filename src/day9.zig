@@ -24,59 +24,49 @@ pub fn main() !void {
         last_marble: usize,
     });
 
-    try stdout.print("{}\n", try simulateElfGame(allocator, input.players, input.last_marble));
+    try stdout.print("{}\n", try simulateElfGame(allocator, input.players, input.last_marble * 100));
 }
 
-fn simulateElfGame(allocator: *mem.Allocator, players: usize, last_marble: usize) !usize {
-    const scores = try allocator.alloc(usize, players);
-    defer allocator.free(scores);
+fn simulateElfGame(child_allocator: *mem.Allocator, players: usize, last_marble: usize) !usize {
+    const scores = try child_allocator.alloc(usize, players);
+    defer child_allocator.free(scores);
     mem.set(usize, scores, 0);
 
-    var circle = std.ArrayList(usize).init(allocator);
-    defer circle.deinit();
+    var arena = heap.ArenaAllocator.init(child_allocator);
+    defer arena.deinit();
+    const allocator = &arena.allocator;
 
-    try circle.append(0);
-
-    var curr: usize = 0;
-    var marble: usize = 1;
     var player: usize = 0;
-    while (true) : ({
+    var marble: usize = 1;
+    var circle = std.LinkedList(usize).init();
+    var curr = try circle.createNode(0, allocator);
+    curr.prev = curr;
+    curr.next = curr;
+    circle.first = curr;
+    circle.last = curr;
+    circle.len = 1;
+
+    while (marble < last_marble) : ({
         player = (player + 1) % players;
         marble += 1;
     }) {
-        if (last_marble == marble)
-            return max(usize, scores, lessThan).?;
-
         if (marble % 23 == 0) {
-            curr = ((circle.len + curr) - 7) % circle.len;
+            var i: usize = 0;
+            while (i < 7) : (i+= 1)
+                curr = curr.prev.?;
 
-            const circle_slice = circle.toSlice();
-            const points = marble + circle_slice[curr];
-            scores[player] += points;
 
-            mem.copy(usize, circle_slice[curr..], circle_slice[curr + 1 ..]);
-            _ = circle.pop();
-            continue;
+            scores[player] += curr.data + marble;
+            circle.remove(curr);
+            curr = curr.next.?;
+        } else {
+            const next = try circle.createNode(marble, allocator);
+            curr = curr.next.?;
+            circle.insertAfter(curr, next);
+            curr = next;
         }
 
-        curr = (curr + 2) % circle.len;
-        try circle.insert(curr, marble);
-    }
-}
-
-fn max(comptime T: type, slice: []const T, lt: fn (T, T) bool) ?T {
-    if (slice.len == 0)
-        return null;
-
-    var res = slice[0];
-    for (slice[0..]) |item| {
-        if (lt(res, item))
-            res = item;
     }
 
-    return res;
-}
-
-fn lessThan(a: usize, b: usize) bool {
-    return a < b;
+    return mem.max(usize, scores);
 }
