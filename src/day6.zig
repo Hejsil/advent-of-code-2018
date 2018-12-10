@@ -65,11 +65,7 @@ fn findBiggestFiniteArea(allocator: *mem.Allocator, points: []const Point) !isiz
         }
     }
 
-    return max(isize, areas, struct {
-        fn lessThan(a: isize, b: isize) bool {
-            return a < b;
-        }
-    }.lessThan).?;
+    return mem.max(isize, areas);
 }
 
 fn findRegionAreaFromDistanceToPoints(max_dist: usize, points: []const Point) !usize {
@@ -93,22 +89,17 @@ fn findRegionAreaFromDistanceToPoints(max_dist: usize, points: []const Point) !u
     return area;
 }
 
-fn maxIndex(comptime T: type, slice: []const T, comptime lessThan: fn (T, T) bool) ?usize {
+fn max(comptime T: type, slice: []const T, comptime lessThan: fn (T, T) bool) ?T {
     if (slice.len == 0)
         return null;
 
-    var res: usize = 0;
-    for (slice[0..]) |_, i| {
-        if (lessThan(slice[res], slice[i]))
-            res = i;
+    var res = slice[0];
+    for (slice) |item| {
+        if (lessThan(res, item))
+            res = item;
     }
 
     return res;
-}
-
-fn max(comptime T: type, slice: []const T, comptime lessThan: fn (T, T) bool) ?T {
-    const i = maxIndex(T, slice, lessThan) orelse return null;
-    return slice[i];
 }
 
 fn closestPoint(point: Point, points: []const Point) ?usize {
@@ -138,10 +129,6 @@ const Point = struct {
 
     fn lessThan(a: Point, b: Point) bool {
         return a.distance(zero) < b.distance(zero);
-    }
-
-    fn equal(a: Point, b: Point) bool {
-        return a.x == b.x and a.y == b.y;
     }
 
     fn distance(a: Point, b: Point) u64 {
