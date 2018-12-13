@@ -41,7 +41,6 @@ pub fn main() !void {
     var prev_sum: isize = sumState(init, 0);
     var sum = prev_sum;
     const repeating_diff = loop: while (gen < 50000000000) : (gen += 1) {
-        if (gen % 1000 == 0) debug.warn("{}\n", gen);
         curr = try simulate(arena, curr, note_mask);
 
         var off = @divExact(@intCast(isize, curr.len - init.len), 2) * 8;
@@ -56,13 +55,11 @@ pub fn main() !void {
 
         for (diffs) |_, i| {
             const index = diffs.len - (i + 1);
-            debug.warn("{} ", diffs[index]);
             if (diffs[index] != last)
                 break;
             if (i == 10)
                 break :loop last;
         }
-        debug.warn("\n");
     } else blk: {
         break :blk 0;
     };
@@ -183,19 +180,6 @@ fn sumF(comptime T: type, buf: []const T) isize {
         res += item;
 
     return res;
-}
-
-fn dumpMask(mask: usize) void {
-    var i: usize = 0;
-    while (i < 8) : (i += 1) {
-        debug.warn("{c}", if (mask & (u8(1) << @intCast(u3, 8 - (i + 1))) != 0) u8('#') else u8('.'));
-    }
-}
-
-fn dumpState(state: []const u8) void {
-    for (state) |s|
-        dumpMask(s);
-    debug.warn("\n");
 }
 
 const Note = struct {
