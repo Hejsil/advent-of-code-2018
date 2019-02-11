@@ -1,7 +1,7 @@
 const std = @import("std");
 const fun = @import("fun");
 
-const debug = std.debug;
+const testing = std.testing;
 const heap = std.heap;
 const io = std.io;
 const math = std.math;
@@ -114,7 +114,7 @@ test "buildSpeed" {
         Dependency{ .step = 'E', .depends_on = 'D' },
         Dependency{ .step = 'E', .depends_on = 'F' },
     });
-    debug.assert(speed == 15);
+    testing.expectEqual(isize(15), speed);
 }
 
 fn buildSpeed(allocator: *mem.Allocator, workers: usize, duration: isize, dependencies: []const Dependency) !isize {

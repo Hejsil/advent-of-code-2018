@@ -1,7 +1,7 @@
 const std = @import("std");
 const fun = @import("fun");
 
-const debug = std.debug;
+const testing = std.testing;
 const heap = std.heap;
 const io = std.io;
 const math = std.math;
@@ -94,8 +94,8 @@ fn calcPower(x: usize, y: usize, serial_number: usize) isize {
 }
 
 test "calcPower" {
-    debug.assert(calcPower(3, 5, 8) == 4);
-    debug.assert(calcPower(122, 79, 57) == -5);
-    debug.assert(calcPower(217, 196, 39) == 0);
-    debug.assert(calcPower(101, 153, 71) == 4);
+    testing.expectEqual(isize(4), calcPower(3, 5, 8));
+    testing.expectEqual(isize(-5), calcPower(122, 79, 57));
+    testing.expectEqual(isize(0), calcPower(217, 196, 39));
+    testing.expectEqual(isize(4), calcPower(101, 153, 71));
 }
