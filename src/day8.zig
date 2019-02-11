@@ -71,13 +71,14 @@ const Tree = struct {
     arena: heap.ArenaAllocator,
 
     fn create(allocator: *mem.Allocator) !*Tree {
-        const tree = try allocator.create(Tree{
+        const tree = try allocator.create(Tree);
+        tree.* = Tree{
             .root = Node{
                 .children = ([*]Node)(undefined)[0..0],
                 .metadata = ([*]u8)(undefined)[0..0],
             },
             .arena = undefined,
-        });
+        };
 
         tree.arena = heap.ArenaAllocator.init(allocator);
         return tree;
